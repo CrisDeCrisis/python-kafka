@@ -1,0 +1,16 @@
+# Configuración específica para Pydantic v2
+# Este archivo contiene las configuraciones necesarias para resolver
+# problemas de compatibilidad con Pydantic v2
+
+# Dependencias críticas con versiones específicas
+pydantic==2.11.7
+pydantic-settings==2.6.1
+pydantic-core==2.33.2
+
+# FastAPI compatible con Pydantic v2
+fastapi==0.115.14
+starlette==0.46.2
+
+# Otras dependencias importantes
+typing_extensions==4.14.0
+annotated-types==0.7.0

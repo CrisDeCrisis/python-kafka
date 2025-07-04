@@ -1,0 +1,47 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/server-python/run.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/server-python"
+            }
+        },
+        {
+            "name": "Python: FastAPI (Development)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--reload",
+                "--host",
+                "localhost",
+                "--port",
+                "8000"
+            ],
+            "jinja": true,
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/server-python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/server-python"
+            }
+        },
+        {
+            "name": "Python: Test Client",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/server-python/client_example.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/server-python"
+            }
+        }
+    ]
+}

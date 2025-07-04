@@ -1,0 +1,40 @@
+{
+    "folders": [
+        {
+            "path": "./server-python"
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "./.venv/Scripts/python.exe",
+        "python.envFile": "${workspaceFolder}/server-python/.env",
+        "python.analysis.extraPaths": [
+            "${workspaceFolder}/server-python"
+        ],
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+            "tests"
+        ],
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": [
+            "--line-length=88"
+        ],
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/chroma_db*": true,
+            "**/logs": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "ms-python.black-formatter",
+            "ms-python.pylint",
+            "ms-vscode.vscode-json",
+            "redhat.vscode-yaml"
+        ]
+    }
+}
