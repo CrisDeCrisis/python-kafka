@@ -18,7 +18,7 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = Field(None, description="ID de la conversación")
     use_context: bool = Field(True, description="Si usar contexto previo")
     max_tokens: Optional[int] = Field(None, description="Máximo número de tokens")
-    temperature: Optional[float] = Field(0.7, description="Temperatura del modelo")
+    temperature: Optional[float] = Field(0.4, description="Temperatura del modelo")
 
 
 class ChatResponse(BaseModel):

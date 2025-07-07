@@ -10,6 +10,11 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Constantes
+DEFAULT_TEMPERATURE = 0.4
+QUESTION_PREVIEW_LENGTH = 50
+TEST_QUESTION = "¿Estás funcionando?"
+
 
 class LLMService:
     """Servicio para interactuar con el modelo de lenguaje"""
@@ -18,7 +23,7 @@ class LLMService:
         self.llm = OllamaLLM(
             model=settings.llm_model,
             base_url=settings.ollama_base_url,
-            temperature=0.7
+            temperature=DEFAULT_TEMPERATURE
         )
         self.output_parser = StrOutputParser()
         self._setup_prompts()
@@ -26,23 +31,48 @@ class LLMService:
     def _setup_prompts(self):
         """Configura los templates de prompts"""
         self.chat_prompt = PromptTemplate.from_template(
-            """Eres un asistente de IA útil y amigable. Responde de manera clara y concisa.
-
-Usuario: {question}
-
-Asistente:"""
+            "Eres un guia turistico en la provincia de Formosa, Argentina. Tu nombre es JabiTur. Responde de manera clara y concisa.\n\n"
+            "Usuario: {question}\n\n"
+            "Asistente:"
         )
         
         self.context_prompt = PromptTemplate.from_template(
-            """Eres un asistente de IA útil y amigable. Usa el contexto proporcionado para responder la pregunta de manera precisa.
-
-Contexto:
-{context}
-
-Pregunta: {question}
-
-Respuesta:"""
+            "Eres un asistente de IA útil y amigable. Usa el contexto proporcionado para responder la pregunta de manera precisa.\n\n"
+            "Contexto:\n{context}\n\n"
+            "Pregunta: {question}\n\n"
+            "Respuesta:"
         )
+    
+    def _prepare_chain(self, question: str, context: Optional[str] = None, temperature: Optional[float] = None):
+        """
+        Prepara la cadena de procesamiento y variables de entrada
+        
+        Args:
+            question: Pregunta del usuario
+            context: Contexto opcional para la respuesta
+            temperature: Temperatura del modelo (opcional)
+            
+        Returns:
+            Tupla con (chain, input_vars, log_message)
+        """
+        # Configurar temperatura si se especifica
+        if temperature is not None:
+            self.llm.temperature = temperature
+        
+        # Seleccionar prompt según si hay contexto
+        if context:
+            prompt = self.context_prompt
+            input_vars = {"question": question, "context": context}
+            log_message = f"con contexto para: {question[:QUESTION_PREVIEW_LENGTH]}..."
+        else:
+            prompt = self.chat_prompt
+            input_vars = {"question": question}
+            log_message = f"sin contexto para: {question[:QUESTION_PREVIEW_LENGTH]}..."
+        
+        # Crear cadena de procesamiento
+        chain = prompt | self.llm | self.output_parser
+        
+        return chain, input_vars, log_message
     
     async def generate_response(
         self, 
@@ -62,22 +92,8 @@ Respuesta:"""
             Respuesta generada por el modelo
         """
         try:
-            # Configurar temperatura si se especifica
-            if temperature is not None:
-                self.llm.temperature = temperature
-            
-            # Seleccionar prompt según si hay contexto
-            if context:
-                prompt = self.context_prompt
-                input_vars = {"question": question, "context": context}
-                logger.info(f"Generando respuesta con contexto para: {question[:50]}...")
-            else:
-                prompt = self.chat_prompt
-                input_vars = {"question": question}
-                logger.info(f"Generando respuesta sin contexto para: {question[:50]}...")
-            
-            # Crear cadena de procesamiento
-            chain = prompt | self.llm | self.output_parser
+            chain, input_vars, log_message = self._prepare_chain(question, context, temperature)
+            logger.info(f"Generando respuesta {log_message}")
             
             # Generar respuesta
             response = await chain.ainvoke(input_vars)
@@ -107,22 +123,8 @@ Respuesta:"""
             Chunks de la respuesta generada
         """
         try:
-            # Configurar temperatura si se especifica
-            if temperature is not None:
-                self.llm.temperature = temperature
-            
-            # Seleccionar prompt según si hay contexto
-            if context:
-                prompt = self.context_prompt
-                input_vars = {"question": question, "context": context}
-                logger.info(f"Generando respuesta streaming con contexto para: {question[:50]}...")
-            else:
-                prompt = self.chat_prompt
-                input_vars = {"question": question}
-                logger.info(f"Generando respuesta streaming sin contexto para: {question[:50]}...")
-            
-            # Crear cadena de procesamiento
-            chain = prompt | self.llm | self.output_parser
+            chain, input_vars, log_message = self._prepare_chain(question, context, temperature)
+            logger.info(f"Generando respuesta streaming {log_message}")
             
             # Generar respuesta streaming
             async for chunk in chain.astream(input_vars):
@@ -152,12 +154,13 @@ Respuesta:"""
             content = doc.get("content", "")
             metadata = doc.get("metadata", {})
             
-            # Añadir información del documento
+            # Construir parte del contexto
             context_part = f"Documento {i}:\n{content}"
             
             # Añadir metadatos si existen
             if metadata:
-                context_part += f"\nMetadatos: {metadata}"
+                metadata_str = ", ".join(f"{k}: {v}" for k, v in metadata.items())
+                context_part += f"\nMetadatos: {metadata_str}"
             
             context_parts.append(context_part)
         
@@ -171,9 +174,19 @@ Respuesta:"""
             True si el modelo está disponible, False en caso contrario
         """
         try:
-            # Intentar generar una respuesta simple
-            response = await self.generate_response("Test")
-            return bool(response)
+            # Intentar generar una respuesta simple con timeout implícito
+            response = await self.generate_response(TEST_QUESTION)
+            
+            # Verificar que la respuesta no esté vacía
+            is_available = bool(response and response.strip())
+            
+            if is_available:
+                logger.info("Modelo disponible y funcionando correctamente")
+            else:
+                logger.warning("Modelo disponible pero respuesta vacía")
+            
+            return is_available
+            
         except Exception as e:
             logger.error(f"Modelo no disponible: {str(e)}")
             return False
