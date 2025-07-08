@@ -1,244 +1,470 @@
-# Servidor de IA con LangChain y Ollama
+# 🤖 AI Server - Servidor de Inteligencia Artificial
 
-Este proyecto implementa un servidor HTTP con FastAPI que integra modelos de IA a través de LangChain y Ollama, con capacidades de embeddings y almacenamiento vectorial usando ChromaDB.
+Servidor FastAPI de alta performance que integra **LangChain**, **Ollama** y **ChromaDB** para proporcionar capacidades avanzadas de procesamiento de lenguaje natural con contexto vectorial y streaming en tiempo real.
 
-## Características
+> 📋 **Nota**: Para la documentación completa del sistema incluyendo Kafka, consulta [README_KAFKA.md](../README_KAFKA.md)
 
-- **FastAPI**: Framework web moderno y rápido
-- **LangChain**: Framework para aplicaciones con LLM
-- **Ollama**: Servidor local de modelos de IA
-- **ChromaDB**: Base de datos vectorial para embeddings
-- **Arquitectura modular**: Código organizado en servicios separados
-- **Contexto conversacional**: Mantiene el contexto de las conversaciones
-- **Embeddings**: Procesamiento de documentos con embeddings
-- **Streaming**: Respuestas en tiempo real
+## ✨ Características del Servidor
 
-## Modelos Utilizados
+- 🚀 **FastAPI**: Framework moderno con documentación automática
+- 🧠 **LangChain**: Orquestación avanzada de LLMs
+- 🏠 **Ollama**: Modelos de IA ejecutándose localmente
+- 🔍 **ChromaDB**: Base de datos vectorial para búsqueda semántica
+- ⚡ **Streaming**: Respuestas en tiempo real
+- 💬 **Contexto Conversacional**: Mantiene historial de conversaciones
+- 📄 **Gestión de Documentos**: Procesamiento automático de embeddings
+- 🔄 **Integración Kafka**: Distribución de mensajes (opcional)
 
-- **LLM**: phi3:3.8b (modelo de lenguaje principal)
-- **Embeddings**: nomic-embed-text (para generar embeddings)
+## 🛠️ Modelos de IA Utilizados
 
-## Estructura del Proyecto
+| Componente        | Modelo             | Propósito                        |
+| ----------------- | ------------------ | -------------------------------- |
+| **LLM Principal** | `phi3:3.8b`        | Generación de texto y respuestas |
+| **Embeddings**    | `nomic-embed-text` | Vectorización de documentos      |
+
+## ⚡ Inicio Rápido
+
+### 1. Prerrequisitos
+
+```powershell
+# Verificar Python
+python --version  # Requiere 3.11+
+
+# Instalar y configurar Ollama
+ollama pull phi3:3.8b
+ollama pull nomic-embed-text
+```
+
+### 2. Instalación
+
+```powershell
+# Crear entorno virtual
+python -m venv .venv
+.venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Configurar variables de entorno
+copy .env.example .env
+```
+
+### 3. Iniciar Servidor
+
+```powershell
+# Método directo
+python run.py
+
+# Con utilidades (recomendado)
+python utils.py start
+
+# Desarrollo con recarga automática
+python utils.py start --reload
+```
+
+### 4. Verificar Funcionamiento
+
+```powershell
+# Health check
+curl http://localhost:8000/health/
+
+# Documentación interactiva
+# Abrir: http://localhost:8000/docs
+```
+
+## 🎯 API Endpoints
+
+### 📋 Documentación Automática
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### 💬 Chat y Conversación
+
+```powershell
+# Chat básico
+curl -X POST "http://localhost:8000/chat/" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "¿Cómo estás?", "use_context": false, "temperature": 0.7}'
+
+# Chat con contexto vectorial
+curl -X POST "http://localhost:8000/chat/" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "Explica machine learning", "use_context": true, "conversation_id": "conv-123"}'
+
+# Streaming en tiempo real
+curl -X POST "http://localhost:8000/chat/stream" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "Escribe un poema", "use_context": false}'
+
+# Historial de conversación
+curl "http://localhost:8000/chat/history/conv-123"
+```
+
+### 📄 Gestión de Documentos
+
+```powershell
+# Añadir documento al contexto
+curl -X POST "http://localhost:8000/documents/" `
+  -H "Content-Type: application/json" `
+  -d '{"content": "Información importante...", "metadata": {"tipo": "ejemplo"}, "conversation_id": "conv-123"}'
+
+# Estadísticas de documentos
+curl "http://localhost:8000/documents/stats"
+```
+
+### 🔍 Monitoreo y Salud
+
+```powershell
+# Health check general
+curl "http://localhost:8000/health/"
+
+# Estado de modelos
+curl "http://localhost:8000/health/models"
+
+# Información del sistema
+curl "http://localhost:8000/"
+```
+
+## ⚙️ Configuración
+
+### 🔧 Variables de Entorno
+
+Crea un archivo `.env` basado en `.env.example`:
+
+```env
+# Servidor
+HOST=0.0.0.0
+PORT=8000
+DEBUG=false
+LOG_LEVEL=INFO
+
+# Ollama
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=phi3:3.8b
+EMBEDDING_MODEL=nomic-embed-text
+
+# ChromaDB
+CHROMA_PERSIST_DIRECTORY=./chroma_db
+COLLECTION_NAME=conversation_context
+
+# Kafka (opcional)
+KAFKA_ENABLE=true
+KAFKA_BOOTSTRAP_SERVERS=["localhost:9092"]
+```
+
+### 🏗️ Personalización de Servicios
+
+| Archivo                         | Propósito            | Personalización            |
+| ------------------------------- | -------------------- | -------------------------- |
+| `config.py`                     | Configuración global | Variables de entorno, URLs |
+| `services/chat_service.py`      | Lógica principal     | Flujo de conversación      |
+| `services/llm_service.py`       | Integración Ollama   | Prompts, modelos           |
+| `services/embedding_service.py` | Vectorización        | Chunk size, estrategias    |
+| `services/vector_db_service.py` | ChromaDB             | Colecciones, búsquedas     |
+| `api/chat.py`                   | Endpoints chat       | Validaciones, respuestas   |
+
+## 🏗️ Arquitectura del Servidor
+
+### 📁 Estructura de Archivos
 
 ```
 server-python/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # Aplicación FastAPI principal
-│   ├── config.py               # Configuración centralizada
-│   ├── models.py               # Modelos de datos (Pydantic)
-│   ├── dependencies.py         # Inyección de dependencias
-│   ├── logging_config.py       # Configuración de logging
-│   ├── api/                    # Endpoints de la API
-│   │   ├── __init__.py
-│   │   ├── chat.py             # Endpoints de chat
-│   │   ├── documents.py        # Endpoints de documentos
-│   │   └── health.py           # Endpoints de salud
-│   └── services/               # Servicios de negocio
-│       ├── __init__.py
-│       ├── chat_service.py     # Servicio principal de chat
-│       ├── llm_service.py      # Servicio de modelo de lenguaje
-│       ├── embedding_service.py # Servicio de embeddings
-│       └── vector_db_service.py # Servicio de base de datos vectorial
-├── requirements.txt            # Dependencias de Python
-├── .env.example               # Ejemplo de variables de entorno
-└── run.py                     # Punto de entrada
+├── 📁 app/                    # Código principal
+│   ├── 📄 main.py             # Aplicación FastAPI
+│   ├── 📄 config.py           # Configuración centralizada
+│   ├── 📄 models.py           # Modelos Pydantic
+│   ├── 📄 dependencies.py     # Inyección de dependencias
+│   ├── 📄 logging_config.py   # Configuración de logs
+│   ├── 📁 api/                # Endpoints REST
+│   │   ├── 📄 chat.py         # Rutas de chat
+│   │   ├── 📄 documents.py    # Rutas de documentos
+│   │   └── 📄 health.py       # Health checks
+│   └── 📁 services/           # Lógica de negocio
+│       ├── 📄 chat_service.py     # Orquestador principal
+│       ├── 📄 llm_service.py      # Comunicación con Ollama
+│       ├── 📄 embedding_service.py # Generación de embeddings
+│       ├── 📄 vector_db_service.py # Gestión ChromaDB
+│       └── 📄 kafka_service.py    # Integración Kafka
+├── 📁 chroma_db/             # Base de datos vectorial
+├── 📁 logs/                  # Archivos de log
+├── 📄 requirements.txt       # Dependencias Python
+├── 📄 .env.example          # Template configuración
+├── 📄 run.py                # Punto de entrada
+├── 📄 utils.py              # Scripts de utilidad
+├── 📄 diagnose.py           # Diagnóstico del sistema
+└── 📄 client_example.py     # Cliente de prueba
 ```
 
-## Requisitos Previos
+### 🔄 Flujo de Procesamiento
 
-1. **Python 3.8+**
-2. **Ollama** instalado y ejecutándose localmente
-3. **Modelos descargados en Ollama**:
-   ```bash
-   ollama pull phi3:3.8b
-   ollama pull nomic-embed-text
-   ```
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant F as FastAPI
+    participant CS as ChatService
+    participant LLM as LLMService
+    participant E as EmbeddingService
+    participant V as VectorDB
+    participant K as KafkaService
 
-## Instalación
-
-1. **Clonar el repositorio** (si aplicable)
-
-2. **Crear entorno virtual**:
-
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate  # Windows
-   ```
-
-3. **Instalar dependencias**:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configurar variables de entorno**:
-
-   ```bash
-   copy .env.example .env
-   # Editar .env con tu configuración
-   ```
-
-5. **Verificar que Ollama esté ejecutándose**:
-   ```bash
-   ollama list
-   ```
-
-## Uso
-
-### Ejecutar el servidor
-
-```bash
-python run.py
+    C->>F: POST /chat/
+    F->>CS: process_message()
+    CS->>E: generate_embedding()
+    E->>V: similarity_search()
+    V-->>CS: relevant_context
+    CS->>LLM: generate_response()
+    LLM-->>CS: ai_response
+    CS->>K: send_message()
+    CS-->>F: final_response
+    F-->>C: JSON response
 ```
 
-O alternativamente:
+### 🧩 Servicios Principales
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+#### 1. **ChatService** - Orquestador Central
 
-### Endpoints disponibles
+- Coordina todos los servicios
+- Gestiona flujo de conversación
+- Mantiene contexto entre mensajes
 
-#### Chat
+#### 2. **LLMService** - Integración con Ollama
 
-- `POST /chat/` - Chat básico
-- `POST /chat/stream` - Chat con streaming
-- `GET /chat/history/{conversation_id}` - Historial de conversación
-
-#### Documentos
-
-- `POST /documents/` - Añadir documento al contexto
-- `GET /documents/stats` - Estadísticas de documentos
-
-#### Salud
-
-- `GET /health/` - Estado de los servicios
-- `GET /health/models` - Información de modelos
-
-### Ejemplo de uso con curl
-
-```bash
-# Chat básico
-curl -X POST "http://localhost:8000/chat/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "¿Cómo estás?",
-    "use_context": true,
-    "temperature": 0.7
-  }'
-
-# Añadir documento
-curl -X POST "http://localhost:8000/documents/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Este es un documento de ejemplo con información importante.",
-    "metadata": {"tipo": "ejemplo"},
-    "conversation_id": "conv-123"
-  }'
-
-# Health check
-curl -X GET "http://localhost:8000/health/"
-```
-
-## Configuración
-
-### Variables de entorno
-
-- `OLLAMA_BASE_URL`: URL base de Ollama (default: http://localhost:11434)
-- `LLM_MODEL`: Modelo de lenguaje (default: phi3:3.8b)
-- `EMBEDDING_MODEL`: Modelo de embeddings (default: nomic-embed-text)
-- `CHROMA_PERSIST_DIRECTORY`: Directorio de ChromaDB (default: ./chroma_db)
-- `HOST`: Host del servidor (default: 0.0.0.0)
-- `PORT`: Puerto del servidor (default: 8000)
-- `LOG_LEVEL`: Nivel de logging (default: INFO)
-
-### Personalización
-
-Puedes personalizar el comportamiento modificando:
-
-- `app/config.py`: Configuración general
-- `app/services/`: Lógica de negocio
-- `app/api/`: Endpoints de la API
-
-## Funcionalidades Principales
-
-### 1. Chat con IA
-
-- Procesa mensajes del usuario
-- Genera respuestas usando phi3:3.8b
-- Mantiene contexto de conversación
+- Comunicación con modelos de lenguaje
+- Gestión de prompts y respuestas
 - Soporte para streaming
 
-### 2. Gestión de Documentos
+#### 3. **EmbeddingService** - Vectorización
 
-- Añade documentos al contexto
-- Genera embeddings automáticamente
-- Divide documentos en chunks
-- Almacena en base de datos vectorial
+- Genera embeddings de documentos
+- Procesa consultas para búsqueda
+- Optimiza chunks de texto
 
-### 3. Búsqueda Semántica
+#### 4. **VectorDBService** - ChromaDB
 
-- Busca documentos similares
-- Utiliza embeddings para similitud
-- Recupera contexto relevante
-- Mejora respuestas con contexto
+- Almacena embeddings
+- Búsqueda de similitud
+- Gestión de colecciones
 
-### 4. Persistencia
+#### 5. **KafkaService** - Distribución (Opcional)
 
-- Almacena conversaciones en ChromaDB
-- Mantiene embeddings de documentos
-- Permite recuperar historial
+- Publica mensajes a topics
+- Maneja reconexiones
+- Batch y streaming
 
-## Desarrollo
+## 🛠️ Scripts de Utilidad
 
-### Estructura de servicios
+### 📋 Scripts Disponibles
 
-1. **ChatService**: Orquesta todos los componentes
-2. **LLMService**: Interactúa con el modelo de lenguaje
-3. **EmbeddingService**: Genera embeddings
-4. **VectorDatabaseService**: Gestiona ChromaDB
+```powershell
+# Configuración automática
+python utils.py setup           # Instala dependencias y configura
 
-### Añadir nuevas funcionalidades
+# Verificación del sistema
+python utils.py check           # Verifica todos los servicios
+python diagnose.py              # Diagnóstico detallado
 
-1. Crear nuevo servicio en `app/services/`
-2. Añadir endpoints en `app/api/`
-3. Actualizar modelos en `app/models.py`
-4. Actualizar dependencias si es necesario
+# Ejecución del servidor
+python utils.py start           # Inicia servidor
+python utils.py start --reload  # Con recarga automática
+python run.py                   # Método directo
 
-## Troubleshooting
+# Pruebas y ejemplos
+python client_example.py        # Cliente de prueba
+python verify_kafka.py          # Verificar Kafka
+python test_integration.py      # Pruebas de integración
+```
 
-### Problemas comunes
+### 🔧 Utilidades de Desarrollo
 
-1. **Error de conexión a Ollama**:
+```powershell
+# Ver logs en tiempo real
+Get-Content -Wait -Tail 10 logs/app.log
 
-   - Verificar que Ollama esté ejecutándose
-   - Comprobar URL en configuración
+# Verificar estado de servicios
+python -c "from app.dependencies import get_chat_service; print(get_chat_service().health_check())"
 
-2. **Modelo no encontrado**:
+# Probar conectividad Ollama
+curl http://localhost:11434/api/tags
 
-   - Verificar que los modelos estén descargados
-   - Usar `ollama list` para verificar
+# Limpiar base de datos vectorial
+Remove-Item -Recurse -Force chroma_db
+```
 
-3. **Error de permisos en ChromaDB**:
-   - Verificar permisos del directorio
-   - Crear directorio manualmente si es necesario
+## 🚨 Resolución de Problemas
 
-### Logs
+### 🔍 Diagnóstico Rápido
 
-Los logs se guardan en:
+```powershell
+# Ejecutar diagnóstico automático
+python diagnose.py
 
-- Consola: Nivel INFO
-- Archivo: `logs/app.log` (Nivel DEBUG)
+# Verificar configuración
+python utils.py check
 
-## Contribución
+# Comprobar servicios individualmente
+python -c "from app.dependencies import get_chat_service; service = get_chat_service(); print(service.health_check())"
+```
 
-1. Fork el repositorio
-2. Crear rama de feature
-3. Realizar cambios
-4. Añadir tests si es necesario
-5. Crear pull request
+### ❌ Errores Comunes
 
-## Licencia
+| Error                         | Causa                | Solución                        |
+| ----------------------------- | -------------------- | ------------------------------- |
+| `BaseSettings has been moved` | Pydantic v2          | `pip install pydantic-settings` |
+| `Ollama not running`          | Ollama no iniciado   | `ollama serve`                  |
+| `Model not found`             | Modelo no descargado | `ollama pull phi3:3.8b`         |
+| `Port already in use`         | Puerto ocupado       | Cambiar `PORT` en `.env`        |
+| `ChromaDB permission denied`  | Permisos directorio  | Verificar permisos `chroma_db/` |
 
-[Especificar licencia]
+### 🔧 Comandos de Diagnóstico
+
+```powershell
+# Verificar Ollama
+ollama list
+curl http://localhost:11434/api/tags
+
+# Verificar puerto
+netstat -ano | findstr :8000
+
+# Verificar logs
+Get-Content logs/app.log -Tail 20
+
+# Test de dependencias
+python -c "import fastapi, langchain, chromadb, ollama; print('✅ Todas las dependencias OK')"
+```
+
+### 📊 Monitoreo en Tiempo Real
+
+```powershell
+# Logs del servidor
+Get-Content -Wait logs/app.log
+
+# Estado de salud
+curl http://localhost:8000/health/
+
+# Métricas de documentos
+curl http://localhost:8000/documents/stats
+
+# Test básico
+curl -X POST http://localhost:8000/chat/ -H "Content-Type: application/json" -d '{"message":"test"}'
+```
+
+## 🎯 Casos de Uso
+
+### 💼 Implementaciones Típicas
+
+#### 1. **Chatbot Corporativo**
+
+```python
+# Configurar con documentos de empresa
+POST /documents/
+{
+  "content": "Manual de procedimientos...",
+  "metadata": {"department": "HR"}
+}
+
+# Chat con contexto corporativo
+POST /chat/
+{
+  "message": "¿Cuál es la política de vacaciones?",
+  "use_context": true
+}
+```
+
+#### 2. **Asistente de Documentación**
+
+```python
+# Cargar documentación técnica
+POST /documents/
+{
+  "content": "Documentación de API...",
+  "metadata": {"type": "api_docs"}
+}
+
+# Consultas específicas
+POST /chat/
+{
+  "message": "¿Cómo implementar autenticación?",
+  "use_context": true
+}
+```
+
+#### 3. **Sistema de Conocimiento**
+
+```python
+# Múltiples fuentes de información
+# Streaming para respuestas largas
+POST /chat/stream
+{
+  "message": "Explica arquitectura de microservicios",
+  "use_context": true
+}
+```
+
+## 📈 Extensiones y Mejoras
+
+### 🔮 Funcionalidades Avanzadas
+
+- **🔐 Autenticación**: Agregar JWT/OAuth
+- **🌐 Multi-idioma**: Soporte para múltiples idiomas
+- **📊 Analytics**: Métricas de uso y performance
+- **🔄 Cache**: Redis para respuestas frecuentes
+- **🛡️ Rate Limiting**: Control de velocidad de requests
+- **📱 WebSocket**: Chat en tiempo real
+- **🗃️ Base de Datos**: PostgreSQL para persistencia
+- **☁️ Cloud**: Despliegue en AWS/Azure/GCP
+
+### 🧩 Integración con Otros Servicios
+
+```python
+# Ejemplo: Añadir nuevo servicio
+# app/services/translation_service.py
+class TranslationService:
+    async def translate(self, text: str, target_lang: str) -> str:
+        # Implementar traducción
+        pass
+
+# app/api/translation.py
+@router.post("/translate")
+async def translate_text(request: TranslationRequest):
+    # Endpoint de traducción
+    pass
+```
+
+## 📚 Referencias y Recursos
+
+### 🔗 Documentación Oficial
+
+- **FastAPI**: https://fastapi.tiangolo.com/
+- **LangChain**: https://python.langchain.com/
+- **Ollama**: https://github.com/ollama/ollama
+- **ChromaDB**: https://docs.trychroma.com/
+- **Pydantic**: https://docs.pydantic.dev/
+
+### 📖 Guías Relacionadas
+
+- `../README_KAFKA.md` - Documentación completa del sistema
+- `QUICKSTART.md` - Guía de inicio rápido
+- `.env.example` - Variables de entorno disponibles
+
+---
+
+## 📞 Información del Proyecto
+
+**🏷️ Versión**: 1.0.0  
+**🐍 Python**: 3.11+  
+**📄 Licencia**: MIT  
+**📅 Última actualización**: Julio 2025
+
+### 🚀 Comandos de Resumen
+
+```powershell
+# Setup completo en una línea
+python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt && copy .env.example .env && python run.py
+
+# Verificación rápida
+python utils.py check && curl http://localhost:8000/health/
+
+# Documentación local
+# http://localhost:8000/docs
+```

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
+    # Kafka
+    kafka_bootstrap_servers: List[str] = ["localhost:9092"]
+    kafka_enable: bool = True
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

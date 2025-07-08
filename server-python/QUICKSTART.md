@@ -1,242 +1,227 @@
-# Guía de Inicio Rápido
+# ⚡ Guía de Inicio Rápido - AI Server
 
-## Prerequisitos
+Configuración express para tener el servidor funcionando en **menos de 5 minutos**.
 
-1. **Python 3.8+** instalado
-2. **Ollama** instalado y ejecutándose
-3. **Modelos descargados** en Ollama
+> 📋 **Para documentación completa**: Ver [README.md](README.md) y [README_KAFKA.md](../README_KAFKA.md)
 
-## Configuración Inicial
+## 🎯 Prerequisitos Mínimos
 
-### 1. Descargar Modelos
+✅ **Python 3.11+** instalado  
+✅ **Ollama** descargado e instalado  
+✅ **Git** para clonar (opcional)
 
-```bash
-# Descargar los modelos necesarios
+## 🚀 Instalación Express (5 minutos)
+
+### ⏱️ Paso 1: Preparar Modelos (2 min)
+
+```powershell
+# Descargar modelos necesarios
 ollama pull phi3:3.8b
 ollama pull nomic-embed-text
 
-# Verificar que están disponibles
+# Verificar descarga
 ollama list
 ```
 
-### 2. Configurar Entorno
+### ⏱️ Paso 2: Configurar Entorno (2 min)
 
-#### Opción B: Instalación Manual
-
-```bash
-# Navegar al directorio del servidor
+```powershell
+# Navegar al directorio
 cd server-python
 
-# Crear entorno virtual
+# Crear y activar entorno virtual
 python -m venv .venv
-
-# Activar entorno virtual (Windows)
 .venv\Scripts\activate
-
-# Activar entorno virtual (Linux/Mac)
-source .venv/bin/activate
-
-# Actualizar pip
-python -m pip install --upgrade pip
 
 # Instalar dependencias
 pip install -r requirements.txt
-```
 
-### 3. Configurar Variables de Entorno
-
-```bash
-# Copiar archivo de ejemplo
+# Configurar variables
 copy .env.example .env
-
-# Editar .env con tu configuración si es necesario
 ```
 
-## Iniciar el Servidor
+### ⏱️ Paso 3: Iniciar Servidor (1 min)
 
-### Opción 1: Usando el script de utilidades
+```powershell
+# Método 1: Script directo
+python run.py
 
-```bash
+# Método 2: Con utilidades (recomendado)
+python utils.py start
+```
+
+### ✅ Verificación
+
+```powershell
+# Test rápido
+curl http://localhost:8000/health/
+
+# Abrir documentación
+start http://localhost:8000/docs
+```
+
+## 🛠️ Configuración Automática
+
+### 🎛️ Script Todo-en-Uno
+
+```powershell
 # Configurar todo automáticamente
 python utils.py setup
 
-# Verificar dependencias
+# Verificar instalación
 python utils.py check
 
 # Iniciar servidor
 python utils.py start
 ```
 
-### Opción 2: Manualmente
+## 🧪 Primeras Pruebas
 
-```bash
-# Ejecutar directamente
-python run.py
+### 💬 Test de Chat Básico
 
-# O con uvicorn
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```powershell
+# Chat simple
+curl -X POST "http://localhost:8000/chat/" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "Hola, ¿cómo estás?"}'
+
+# Con parámetros
+curl -X POST "http://localhost:8000/chat/" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "Explica qué es Python", "temperature": 0.8, "use_context": false}'
 ```
 
-## Verificar que Funciona
+### 📄 Test de Documentos
 
-### 1. Verificar Estado
+```powershell
+# Añadir documento
+curl -X POST "http://localhost:8000/documents/" `
+  -H "Content-Type: application/json" `
+  -d '{"content": "Python es un lenguaje de programación de alto nivel...", "conversation_id": "test-001"}'
 
-```bash
-# Verificar salud del servidor
-curl http://localhost:8000/health/
-
-# Ver documentación automática
-# Abrir en navegador: http://localhost:8000/docs
+# Chat con contexto
+curl -X POST "http://localhost:8000/chat/" `
+  -H "Content-Type: application/json" `
+  -d '{"message": "¿Qué características tiene Python?", "use_context": true, "conversation_id": "test-001"}'
 ```
 
-### 2. Probar Chat
+### 🎯 Cliente de Prueba Incluido
 
-```bash
-# Probar chat básico
-curl -X POST "http://localhost:8000/chat/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "¿Cómo estás?",
-    "use_context": false
-  }'
-```
-
-### 3. Ejecutar Cliente de Prueba
-
-```bash
-# Ejecutar cliente de ejemplo
+```powershell
+# Ejecutar cliente interactivo
 python client_example.py
 ```
 
-## Endpoints Principales
+## 🌐 URLs Importantes
 
-- `GET /` - Información básica
-- `GET /health/` - Estado del servidor
-- `POST /chat/` - Chat con IA
-- `POST /chat/stream` - Chat con streaming
-- `POST /documents/` - Añadir documentos
-- `GET /docs` - Documentación automática
+Una vez iniciado el servidor:
 
-## Solución de Problemas
+| Servicio          | URL                          | Descripción               |
+| ----------------- | ---------------------------- | ------------------------- |
+| **API Principal** | http://localhost:8000        | Endpoint base             |
+| **Documentación** | http://localhost:8000/docs   | Swagger UI interactivo    |
+| **ReDoc**         | http://localhost:8000/redoc  | Documentación alternativa |
+| **Health Check**  | http://localhost:8000/health | Estado del sistema        |
 
-### 🔍 Script de Diagnóstico Automático
+## ⚙️ Configuración Kafka (Opcional)
 
-Si tienes problemas, ejecuta primero el script de diagnóstico:
+Si quieres habilitar Kafka para streaming:
 
-```bash
-# Ejecutar diagnóstico completo
-python diagnose.py
+```powershell
+# Desde el directorio raíz del proyecto
+cd ..
+docker-compose up -d
 
-# Esto identificará automáticamente los problemas y generará scripts de reparación
+# Crear topics
+cd server-python
+python create_kafka_topics.py
+
+# Verificar Kafka
+python verify_kafka.py
 ```
 
-### Error: "BaseSettings has been moved to pydantic-settings"
+## 🚨 Solución de Problemas Express
 
-Este error ocurre porque Pydantic v2 ha movido `BaseSettings` a un paquete separado.
+### ❌ Error: "BaseSettings has been moved to pydantic-settings"
 
-**Solución:**
-
-```bash
-# Método 1: Instalar pydantic-settings específicamente
+```powershell
 pip install pydantic-settings
-
-# Método 2: Reinstalar todas las dependencias
-pip install -r requirements.txt --force-reinstall
-
-# Método 3: Usar archivo de requisitos específico para Pydantic
-pip install -r requirements-pydantic.txt
-
-# Método 4: Verificar instalación
-python -c "from pydantic_settings import BaseSettings; print('✅ pydantic-settings instalado correctamente')"
 ```
 
-### Error: "Ollama not running"
+### ❌ Error: "Ollama not running"
 
-```bash
+```powershell
 # Iniciar Ollama
 ollama serve
+
+# En otra terminal, verificar
+ollama list
 ```
 
-### Error: "Model not found"
+### ❌ Error: "Model not found"
 
-```bash
-# Verificar modelos disponibles
-ollama list
-
-# Descargar modelo faltante
+```powershell
 ollama pull phi3:3.8b
 ollama pull nomic-embed-text
 ```
 
-### Error: "Port already in use"
+### ❌ Error: "Port already in use"
 
-```bash
+```powershell
 # Cambiar puerto en .env
-PORT=8001
+echo "PORT=8001" >> .env
 
-# O especificar puerto diferente
+# O usar puerto diferente
 python utils.py start --port 8001
 ```
 
-## Desarrollo
+### 🔍 Diagnóstico Automático
 
-### Estructura del Proyecto
+```powershell
+# Ejecutar diagnóstico completo
+python diagnose.py
 
-```
-server-python/
-├── app/                    # Código principal
-│   ├── main.py            # Aplicación FastAPI
-│   ├── config.py          # Configuración
-│   ├── models.py          # Modelos de datos
-│   ├── api/               # Endpoints
-│   └── services/          # Lógica de negocio
-├── requirements.txt       # Dependencias
-├── run.py                # Punto de entrada
-├── utils.py              # Utilidades
-└── client_example.py     # Cliente de prueba
-```
-
-### Comandos Útiles
-
-```bash
-# Verificar todo
+# Verificar configuración
 python utils.py check
-
-# Probar servidor
-python utils.py test
-
-# Iniciar con recarga automática
-python utils.py start --reload
-
-# Ver logs
-tail -f logs/app.log
 ```
 
-### Personalización
+## 🎯 Próximos Pasos
 
-1. **Configuración**: Editar `app/config.py`
-2. **Nuevos endpoints**: Añadir en `app/api/`
-3. **Lógica de negocio**: Modificar `app/services/`
-4. **Modelos de datos**: Actualizar `app/models.py`
+Una vez que el servidor esté funcionando:
 
-## Monitoreo
+1. **🧪 Explorar API**: http://localhost:8000/docs
+2. **💬 Probar Chat**: Usar la interfaz Swagger
+3. **📄 Añadir Documentos**: Mejorar el contexto
+4. **⚡ Configurar Kafka**: Para distribución de mensajes
+5. **🔧 Personalizar**: Modificar configuraciones según necesidades
 
-### Logs
+## 📋 Comandos de Referencia Rápida
 
-- Consola: Nivel INFO
-- Archivo: `logs/app.log` (Nivel DEBUG)
+```powershell
+# Setup inicial
+python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt
 
-### Métricas
+# Preparar modelos
+ollama pull phi3:3.8b && ollama pull nomic-embed-text
 
-- Estado: `GET /health/`
-- Modelos: `GET /health/models`
-- Estadísticas de documentos: `GET /documents/stats`
+# Configurar
+copy .env.example .env
 
-## Siguiente Paso
+# Iniciar
+python run.py
 
-¡El servidor está listo! Ahora puedes:
+# Verificar
+curl http://localhost:8000/health/
 
-1. Probar el chat en `http://localhost:8000/docs`
-2. Integrar con tu aplicación frontend
-3. Añadir documentos para mejorar el contexto
-4. Personalizar los prompts y configuración
+# Documentación
+start http://localhost:8000/docs
+```
+
+---
+
+## 🎉 ¡Listo!
+
+El servidor está funcionando. Para documentación completa consulta:
+
+- **README.md** - Documentación del servidor
+- **../README_KAFKA.md** - Sistema completo con Kafka

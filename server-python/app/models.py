@@ -48,6 +48,7 @@ class HealthResponse(BaseModel):
     status: str = Field(..., description="Estado del servicio")
     models_available: List[str] = Field(..., description="Modelos disponibles")
     database_status: str = Field(..., description="Estado de la base de datos")
+    kafka_status: Optional[str] = Field(None, description="Estado del servicio de Kafka")
 
 
 class ErrorResponse(BaseModel):

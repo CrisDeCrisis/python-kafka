@@ -10,6 +10,7 @@ from app.config import settings
 from app.logging_config import setup_logging
 from app.api import chat_router, documents_router, health_router
 from app.dependencies import get_chat_service
+from app.services.kafka_service import kafka_service
 
 # Configurar logging
 logger = setup_logging()
@@ -31,6 +32,13 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Algunos servicios no están disponibles: {health_status}")
         else:
             logger.info("Todos los servicios inicializados correctamente")
+        
+        # Verificar estado de Kafka si está habilitado
+        if settings.kafka_enable:
+            if kafka_service.is_healthy():
+                logger.info("Kafka inicializado correctamente")
+            else:
+                logger.warning("Kafka no está disponible")
             
     except Exception as e:
         logger.error(f"Error inicializando servicios: {str(e)}")
@@ -40,6 +48,15 @@ async def lifespan(app: FastAPI):
     yield
     
     logger.info("Cerrando aplicación...")
+    
+    # Cerrar conexiones de Kafka
+    if settings.kafka_enable:
+        try:
+            kafka_service.flush()
+            kafka_service.close()
+            logger.info("Kafka cerrado correctamente")
+        except Exception as e:
+            logger.error(f"Error cerrando Kafka: {str(e)}")
 
 
 # Crear aplicación FastAPI

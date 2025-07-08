@@ -8,7 +8,9 @@ from langchain_core.documents import Document
 from app.services.llm_service import LLMService
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_db_service import VectorDatabaseService
+from app.services.kafka_service import kafka_service
 from app.models import ChatRequest, ChatResponse
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,23 @@ class ChatService:
                 assistant_response=response
             )
             
+            # Enviar respuesta a Kafka si está habilitado
+            if settings.kafka_enable:
+                try:
+                    await kafka_service.send_ia_response(
+                        conversation_id=conversation_id,
+                        user_message=request.message,
+                        ai_response=response,
+                        context_used=context_used,
+                        metadata={
+                            "temperature": request.temperature,
+                            "model": "ollama",
+                            "use_context": request.use_context
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Error enviando mensaje a Kafka: {str(e)}")
+            
             return ChatResponse(
                 response=response,
                 conversation_id=conversation_id,
@@ -94,12 +113,27 @@ class ChatService:
             
             # Generar respuesta streaming
             response_chunks = []
+            chunk_index = 0
             async for chunk in self.llm_service.generate_streaming_response(
                 question=request.message,
                 context=context,
                 temperature=request.temperature
             ):
                 response_chunks.append(chunk)
+                
+                # Enviar chunk a Kafka si está habilitado
+                if settings.kafka_enable:
+                    try:
+                        await kafka_service.send_streaming_response_chunk(
+                            conversation_id=conversation_id,
+                            chunk=chunk,
+                            chunk_index=chunk_index,
+                            is_final=False
+                        )
+                    except Exception as e:
+                        logger.warning(f"Error enviando chunk streaming a Kafka: {str(e)}")
+                
+                chunk_index += 1
                 yield {
                     "chunk": chunk,
                     "conversation_id": conversation_id,
@@ -113,6 +147,32 @@ class ChatService:
                 user_message=request.message,
                 assistant_response=full_response
             )
+            
+            # Enviar chunk final a Kafka
+            if settings.kafka_enable:
+                try:
+                    await kafka_service.send_streaming_response_chunk(
+                        conversation_id=conversation_id,
+                        chunk="",
+                        chunk_index=chunk_index,
+                        is_final=True
+                    )
+                    # Enviar también la respuesta completa al topic principal
+                    await kafka_service.send_ia_response(
+                        conversation_id=conversation_id,
+                        user_message=request.message,
+                        ai_response=full_response,
+                        context_used=bool(context),
+                        metadata={
+                            "temperature": request.temperature,
+                            "model": "ollama",
+                            "use_context": request.use_context,
+                            "streaming": True,
+                            "total_chunks": chunk_index
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Error enviando respuesta final a Kafka: {str(e)}")
             
         except Exception as e:
             logger.error(f"Error procesando petición de chat streaming: {str(e)}")
